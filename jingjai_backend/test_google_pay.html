@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Pay Test</title>
+</head>
+<body>
+    <h1>Google Pay Test</h1>
+    <p>Amount: $10.79</p>
+    <div id="google-pay-button"></div>
+    <div id="result"></div>
+    
+    <script async src="https://pay.google.com/gp/p/js/pay.js"></script>
+    <script>
+        let paymentsClient;
+        
+        function onGooglePayLoaded() {
+            paymentsClient = new google.payments.api.PaymentsClient({
+                environment: 'TEST'
+            });
+            
+            const paymentDataRequest = {
+                apiVersion: 2,
+                apiVersionMinor: 0,
+                allowedPaymentMethods: [{
+                    type: 'CARD',
+                    parameters: {
+                        allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+                        allowedCardNetworks: ['VISA', 'MASTERCARD', 'AMEX']
+                    },
+                    tokenizationSpecification: {
+                        type: 'PAYMENT_GATEWAY',
+                        parameters: {
+                            gateway: 'example',
+                            gatewayMerchantId: 'exampleGatewayMerchantId'
+                        }
+                    }
+                }],
+                merchantInfo: {
+                    merchantId: '01234567890123456789',
+                    merchantName: 'JINGJAI Test'
+                },
+                transactionInfo: {
+                    totalPriceStatus: 'FINAL',
+                    totalPrice: '501',
+                    currencyCode: 'USD'
+                }
+            };
+            
+            paymentsClient.isReadyToPay({
+                apiVersion: 2,
+                apiVersionMinor: 0,
+                allowedPaymentMethods: paymentDataRequest.allowedPaymentMethods
+            }).then(response => {
+                if (response.result) {
+                    createButton(paymentDataRequest);
+                } else {
+                    document.getElementById('result').innerHTML = 'Google Pay not supported';
+                }
+            });
+        }
+        
+        function createButton(paymentDataRequest) {
+            const button = paymentsClient.createButton({
+                onClick: () => onGooglePayButtonClicked(paymentDataRequest)
+            });
+            document.getElementById('google-pay-button').appendChild(button);
+        }
+        
+        function onGooglePayButtonClicked(paymentDataRequest) {
+            paymentsClient.loadPaymentData(paymentDataRequest)
+                .then(paymentData => {
+                    console.log('Payment data received:', paymentData);
+                    document.getElementById('result').innerHTML = 
+                        '<p style="color: green;">✅ Payment token received! Check console for details.</p>';
+                    
+                    // Send to your backend
+                    processPayment(paymentData);
+                })
+                .catch(err => {
+                    console.error('Payment failed:', err);
+                    document.getElementById('result').innerHTML = 
+                        '<p style="color: red;">❌ Payment failed: ' + err.statusMessage + '</p>';
+                });
+        }
+        
+        function processPayment(paymentData) {
+            fetch('http://localhost:8000/payments/google-pay/payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    payment_data: paymentData,
+                    amount: 501,
+                    currency: 'USD',
+                    order_id: 'test_order_' + Date.now(),
+                    user_id: 1,
+                    description: 'Test payment'
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Backend response:', result);
+                if (result.success) {
+                    document.getElementById('result').innerHTML += 
+                        '<br><p style="color: blue;"> Payment processed! Transaction: ' + result.transaction_id + '</p>';
+                } else {
+                    document.getElementById('result').innerHTML += 
+                        '<br><p style="color: red;">Backend error: ' + result.message + '</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Backend error:', error);
+            });
+        }
+        
+        window.onload = onGooglePayLoaded;
+    </script>
+</body>
+</html>

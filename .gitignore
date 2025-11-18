@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-wheel-metadata/
+.eggs/
+*.egg-info/
+*.egg
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+
+# Build artifacts
+build/
+dist/
+*.jar
+*.war
+
+# Secrets
+*.env
+*.json
+!jingjai_backend/app/schemas.json
+debug.keystore
+*.pem
+*.key
+
+# Media
+*.mp4
+*.avi
+*.mov
+*.wmv
